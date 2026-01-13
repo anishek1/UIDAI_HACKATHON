@@ -1,0 +1,41 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Data files (too large for GitHub)
+data/raw/
+*.csv
+
+# Keep processed data folder structure
+!data/processed/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
