@@ -83,16 +83,17 @@ ifi_df = ifi_df.merge(bio_state, on='state', how='left')
 ifi_df = ifi_df.fillna(0)
 
 ifi_df['total_updates'] = ifi_df['total_demo_updates'] + ifi_df['total_bio_updates']
-ifi_df['ifi'] = ifi_df['total_updates'] / ifi_df['total_enrolments']
+ifi_df['ifi'] = ifi_df['total_updates'] / ifi_df['total_enrolments'].replace(0, np.nan)
+ifi_df['ifi'] = ifi_df['ifi'].fillna(0).replace([np.inf, -np.inf], 0)
 
 # Categorize using config thresholds
-ifi_df['ifi_risk'] = pd.cut(
-    ifi_df['ifi'],
-    bins=[-np.inf, config['analysis']['ifi_bands']['critical'], 
-          config['analysis']['ifi_bands']['at_risk'], 
-          config['analysis']['ifi_bands']['healthy'], np.inf],
-    labels=['🔴 Critical', '🟡 At Risk', '🟢 Healthy', '🔵 Optimal']
-)
+ifi_df['ifi_risk'] = 'Unknown'
+ifi_df.loc[ifi_df['ifi'] < config['analysis']['ifi_bands']['critical'], 'ifi_risk'] = '🔴 Critical'
+ifi_df.loc[(ifi_df['ifi'] >= config['analysis']['ifi_bands']['critical']) & 
+           (ifi_df['ifi'] < config['analysis']['ifi_bands']['at_risk']), 'ifi_risk'] = '🟡 At Risk'
+ifi_df.loc[(ifi_df['ifi'] >= config['analysis']['ifi_bands']['at_risk']) & 
+           (ifi_df['ifi'] < config['analysis']['ifi_bands']['healthy']), 'ifi_risk'] = '🟢 Healthy'
+ifi_df.loc[ifi_df['ifi'] >= config['analysis']['ifi_bands']['healthy'], 'ifi_risk'] = '🔵 Optimal'
 
 ifi_df = ifi_df.sort_values('ifi', ascending=True)
 
@@ -127,11 +128,11 @@ clcr_df['expected_updates'] = clcr_df['age_5_17'] * expected_rate
 clcr_df['clcr'] = clcr_df['bio_age_5_17'] / clcr_df['expected_updates'].replace(0, np.nan)
 clcr_df = clcr_df.fillna(0)
 
-clcr_df['clcr_status'] = pd.cut(
-    clcr_df['clcr'],
-    bins=[-np.inf, 0.50, 0.80, 1.00, np.inf],
-    labels=['🔴 Critical Gap', '🟡 Below Target', '🟢 On Track', '🔵 Exceeding']
-)
+clcr_df['clcr_status'] = 'Unknown'
+clcr_df.loc[clcr_df['clcr'] < 0.50, 'clcr_status'] = '🔴 Critical Gap'
+clcr_df.loc[(clcr_df['clcr'] >= 0.50) & (clcr_df['clcr'] < 0.80), 'clcr_status'] = '🟡 Below Target'
+clcr_df.loc[(clcr_df['clcr'] >= 0.80) & (clcr_df['clcr'] < 1.00), 'clcr_status'] = '🟢 On Track'
+clcr_df.loc[clcr_df['clcr'] >= 1.00, 'clcr_status'] = '🔵 Exceeding'
 
 clcr_df = clcr_df.sort_values('clcr', ascending=True)
 
@@ -157,11 +158,11 @@ taes_df = weekend_avg.merge(weekday_avg, on='state', how='outer').fillna(0)
 taes_df['taes'] = taes_df['weekend_avg'] / taes_df['weekday_avg'].replace(0, np.nan)
 taes_df['taes'] = taes_df['taes'].fillna(0).clip(upper=1.5)
 
-taes_df['taes_status'] = pd.cut(
-    taes_df['taes'],
-    bins=[-np.inf, 0.50, config['analysis']['taes_acceptable'], 0.90, np.inf],
-    labels=['🔴 Severe', '🟡 Moderate', '🟢 Acceptable', '🔵 Equitable']
-)
+taes_df['taes_status'] = 'Unknown'
+taes_df.loc[taes_df['taes'] < 0.50, 'taes_status'] = '🔴 Severe'
+taes_df.loc[(taes_df['taes'] >= 0.50) & (taes_df['taes'] < config['analysis']['taes_acceptable']), 'taes_status'] = '🟡 Moderate'
+taes_df.loc[(taes_df['taes'] >= config['analysis']['taes_acceptable']) & (taes_df['taes'] < 0.90), 'taes_status'] = '🟢 Acceptable'
+taes_df.loc[taes_df['taes'] >= 0.90, 'taes_status'] = '🔵 Equitable'
 
 taes_df = taes_df.sort_values('taes', ascending=True)
 
