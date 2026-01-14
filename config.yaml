@@ -1,0 +1,66 @@
+# UIDAI Hackathon Project Configuration
+# =====================================
+# Central configuration for reproducible analysis
+
+project:
+  name: "UIDAI Identity Lifecycle Health Analysis"
+  team_id: "UIDAI_1545"
+  version: "2.0.0"
+
+# Data paths
+data:
+  raw:
+    enrolment: "data/raw/Enrolment"
+    demographic: "data/raw/Demographic"
+    biometric: "data/raw/Biometric"
+  external:
+    population: "data/external/state_population.csv"
+  processed:
+    output_dir: "data/processed"
+
+# Analysis parameters
+analysis:
+  # IFI thresholds
+  ifi_bands:
+    critical: 0.20
+    at_risk: 0.40
+    healthy: 0.60
+  
+  # CLCR parameters
+  expected_child_update_rate: 0.20  # 20% annual
+  
+  # TAES thresholds
+  taes_acceptable: 0.70
+  taes_equitable: 0.90
+  
+  # UCR parameters
+  min_activity_threshold: 100
+
+# Visualization settings
+visualization:
+  output_dir: "visualizations"
+  dpi: 300
+  format: "png"
+  style: "seaborn-v0_8-whitegrid"
+  
+  colors:
+    critical: "#dc3545"
+    at_risk: "#ffc107"
+    healthy: "#28a745"
+    optimal: "#007bff"
+    
+  regions:
+    north: "#4e79a7"
+    south: "#f28e2b"
+    east: "#e15759"
+    west: "#76b7b2"
+    northeast: "#59a14f"
+    central: "#edc948"
+
+# Output settings
+output:
+  reports_dir: "reports"
+  figures_dir: "visualizations"
+
+# Reproducibility
+random_seed: 42
