@@ -442,18 +442,253 @@
       margin: 8px 0;
     }
 
+    /* ============================================
+       PRINT STYLES - OPTIMIZED FOR LANDSCAPE A4
+       ============================================ */
     @media print {
+      @page {
+        size: A4 landscape;
+        margin: 15mm 20mm;
+      }
+
+      body {
+        font-size: 9pt;
+        line-height: 1.4;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .container {
+        max-width: 100%;
+        padding: 0;
+      }
+
+      /* Cover page - full page */
       .cover-page {
-        min-height: auto;
-        padding: 80px 40px;
+        height: 100vh;
+        padding: 40px;
+        page-break-after: always;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
 
+      .cover-page h1 {
+        font-size: 2.5em;
+      }
+
+      .cover-page .subtitle {
+        font-size: 1.4em;
+      }
+
+      /* Sections - allow natural flow */
       .section {
-        page-break-inside: avoid;
+        margin-bottom: 25px;
+        page-break-before: auto;
+        /* Remove page-break-inside: avoid to prevent half-blank pages */
       }
 
+      /* Only force page break before these specific sections */
+      .section:nth-of-type(4) {
+        /* Methodology */
+        page-break-before: always;
+      }
+
+      .section:nth-of-type(6) {
+        /* Data Analysis */
+        page-break-before: always;
+      }
+
+      /* Section titles - keep with next content */
+      .section-title {
+        page-break-after: avoid;
+        margin-bottom: 15px;
+      }
+
+      h3 {
+        page-break-after: avoid;
+        margin-top: 20px;
+        margin-bottom: 10px;
+      }
+
+      /* Tables - allow them to break across pages */
+      table {
+        font-size: 8pt;
+        width: 100%;
+        /* No page-break-inside: avoid - let them flow */
+      }
+
+      th,
+      td {
+        padding: 6px 10px;
+      }
+
+      thead {
+        display: table-header-group;
+        /* Repeat headers on new pages */
+      }
+
+      tbody {
+        display: table-row-group;
+      }
+
+      tr {
+        page-break-inside: avoid;
+        /* But keep rows together */
+      }
+
+      /* Visualizations - scale down to fit */
       .viz-container {
         page-break-inside: avoid;
+        margin: 15px 0;
+        text-align: center;
+      }
+
+      .viz-container img {
+        max-width: 90%;
+        max-height: 280px;
+        object-fit: contain;
+      }
+
+      .viz-caption {
+        font-size: 8pt;
+        margin-top: 5px;
+      }
+
+      /* Code blocks - smaller and allow break if too long */
+      .code-block {
+        font-size: 7pt;
+        padding: 10px;
+        max-height: 300px;
+        overflow: hidden;
+        page-break-inside: auto;
+        /* Allow break for long code */
+      }
+
+      /* Callouts - keep together but smaller */
+      .callout {
+        padding: 12px 15px;
+        margin: 10px 0;
+        page-break-inside: avoid;
+      }
+
+      /* Metric cards - two rows if needed */
+      .metrics-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin: 15px 0;
+        page-break-inside: avoid;
+      }
+
+      .metric-card {
+        padding: 15px 10px;
+      }
+
+      .metric-value {
+        font-size: 1.4em;
+      }
+
+      .metric-label {
+        font-size: 0.75em;
+      }
+
+      /* Stats grid */
+      .stats-grid {
+        gap: 10px;
+        margin: 15px 0;
+        page-break-inside: avoid;
+      }
+
+      .stat-item {
+        padding: 10px;
+      }
+
+      .stat-value {
+        font-size: 1.2em;
+      }
+
+      /* Tier boxes - keep together */
+      .tier {
+        margin: 10px 0;
+        page-break-inside: avoid;
+      }
+
+      .tier-header {
+        padding: 10px 15px;
+        font-size: 0.9em;
+      }
+
+      .tier-content {
+        padding: 12px 15px;
+      }
+
+      /* Two column layout - stack on print if needed */
+      .two-col {
+        gap: 15px;
+        page-break-inside: auto;
+      }
+
+      .finding-card {
+        padding: 15px;
+        margin: 8px 0;
+        page-break-inside: avoid;
+      }
+
+      /* Formula box */
+      .formula-box {
+        padding: 15px;
+        margin: 15px 0;
+        page-break-inside: avoid;
+      }
+
+      .formula-box code {
+        font-size: 1.1em;
+      }
+
+      /* Highlight box */
+      .highlight-box {
+        padding: 20px;
+        margin: 15px 0;
+        page-break-inside: avoid;
+      }
+
+      /* Process flow */
+      .process-flow {
+        margin: 15px 0;
+        page-break-inside: avoid;
+      }
+
+      .process-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1em;
+      }
+
+      .process-arrow {
+        font-size: 1.2em;
+      }
+
+      /* Footer */
+      .page-footer {
+        padding: 25px;
+        margin-top: 30px;
+        page-break-before: always;
+      }
+
+      .page-footer h2 {
+        font-size: 1.3em;
+      }
+
+      /* Orphan/widow control */
+      p {
+        orphans: 2;
+        widows: 2;
+      }
+
+      /* Hide unnecessary elements */
+      .cover-footer {
+        position: static;
+        margin-top: 30px;
       }
     }
   </style>
