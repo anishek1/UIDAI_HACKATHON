@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UIDAI Identity Lifecycle Health Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">🇮🇳</span>
+                <div class="logo-text">
+                    <h1>UIDAI Identity Lifecycle Health</h1>
+                    <p>Predicting Aadhaar Data Staleness to Prevent DBT Failures</p>
+                </div>
+            </div>
+            <div class="header-meta">
+                <span class="team-badge">Team UIDAI_1545</span>
+                <span class="institution">IET Lucknow</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero KPI Section -->
+    <section class="kpi-section">
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-primary animate-fade-in">
+                <div class="kpi-icon">📊</div>
+                <div class="kpi-value" id="kpi-records">4.8M+</div>
+                <div class="kpi-label">Records Analyzed</div>
+                <div class="kpi-subtext">Across 3 datasets</div>
+            </div>
+            <div class="kpi-card kpi-danger animate-fade-in delay-1">
+                <div class="kpi-icon">⚠️</div>
+                <div class="kpi-value" id="kpi-dbt">₹6,000 Cr</div>
+                <div class="kpi-label">Annual DBT at Risk</div>
+                <div class="kpi-subtext">From data staleness</div>
+            </div>
+            <div class="kpi-card kpi-warning animate-fade-in delay-2">
+                <div class="kpi-icon">🚨</div>
+                <div class="kpi-value" id="kpi-critical">8</div>
+                <div class="kpi-label">Critical States</div>
+                <div class="kpi-subtext">Needing intervention</div>
+            </div>
+            <div class="kpi-card kpi-success animate-fade-in delay-3">
+                <div class="kpi-icon">📈</div>
+                <div class="kpi-value" id="kpi-ifi">28.2</div>
+                <div class="kpi-label">National Avg IFI</div>
+                <div class="kpi-subtext">Identity Freshness Index</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filter Controls -->
+    <section class="filter-section">
+        <div class="filter-container">
+            <div class="filter-group">
+                <label>Region:</label>
+                <select id="region-filter" class="filter-select">
+                    <option value="all">All Regions</option>
+                    <option value="north">North</option>
+                    <option value="south">South</option>
+                    <option value="east">East</option>
+                    <option value="west">West</option>
+                    <option value="northeast">Northeast</option>
+                    <option value="central">Central</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Risk Level:</label>
+                <select id="risk-filter" class="filter-select">
+                    <option value="all">All Levels</option>
+                    <option value="critical">Critical</option>
+                    <option value="at-risk">At Risk</option>
+                    <option value="healthy">Healthy</option>
+                    <option value="optimal">Optimal</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Metric:</label>
+                <select id="metric-filter" class="filter-select">
+                    <option value="ifi">IFI (Identity Freshness)</option>
+                    <option value="clcr">CLCR (Child Lifecycle)</option>
+                    <option value="taes">TAES (Weekend Access)</option>
+                    <option value="composite">Composite Score</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="applyFilters()">
+                Apply Filters
+            </button>
+        </div>
+    </section>
+
+    <!-- Main Charts Section -->
+    <section class="charts-section">
+        <div class="charts-grid">
+            <!-- IFI Rankings Chart -->
+            <div class="chart-card animate-slide-up">
+                <div class="chart-header">
+                    <h3>Which States Need Identity Refresh Campaigns?</h3>
+                    <div class="chart-actions">
+                        <button class="btn-icon" onclick="downloadChart('ifiChart')" title="Download">📥</button>
+                        <button class="btn-icon" onclick="toggleFullscreen('ifiChart')" title="Fullscreen">⛶</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="ifiChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Activity Volume Chart -->
+            <div class="chart-card animate-slide-up delay-1">
+                <div class="chart-header">
+                    <h3>Total Activity Volume by Category</h3>
+                    <div class="chart-actions">
+                        <button class="btn-icon" onclick="downloadChart('volumeChart')" title="Download">📥</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="volumeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- CLCR Gap Chart -->
+            <div class="chart-card animate-slide-up delay-2">
+                <div class="chart-header">
+                    <h3>Are Children Getting Mandatory Biometric Updates?</h3>
+                    <div class="chart-actions">
+                        <button class="btn-icon" onclick="downloadChart('clcrChart')" title="Download">📥</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="clcrChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Weekend Access Chart -->
+            <div class="chart-card animate-slide-up delay-3">
+                <div class="chart-header">
+                    <h3>Which States Penalize Working Citizens?</h3>
+                    <div class="chart-actions">
+                        <button class="btn-icon" onclick="downloadChart('taesChart')" title="Download">📥</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="taesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- State Comparison Section -->
+    <section class="comparison-section">
+        <div class="section-header">
+            <h2>🔍 State Comparison Tool</h2>
+            <p>Compare metrics between any two states</p>
+        </div>
+        <div class="comparison-container">
+            <div class="comparison-select">
+                <select id="state1-select" class="filter-select">
+                    <option value="kerala">Kerala</option>
+                    <option value="tamil-nadu">Tamil Nadu</option>
+                    <option value="maharashtra">Maharashtra</option>
+                    <option value="uttar-pradesh">Uttar Pradesh</option>
+                    <option value="meghalaya">Meghalaya</option>
+                </select>
+                <span class="vs-badge">VS</span>
+                <select id="state2-select" class="filter-select">
+                    <option value="meghalaya">Meghalaya</option>
+                    <option value="assam">Assam</option>
+                    <option value="bihar">Bihar</option>
+                    <option value="kerala">Kerala</option>
+                </select>
+                <button class="btn btn-secondary" onclick="compareStates()">Compare</button>
+            </div>
+            <div class="comparison-result" id="comparison-result">
+                <div class="comparison-chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Insights Section -->
+    <section class="insights-section">
+        <div class="section-header">
+            <h2>💡 Key Insights</h2>
+            <p>Critical findings from our analysis</p>
+        </div>
+        <div class="insights-grid">
+            <div class="insight-card insight-critical">
+                <div class="insight-icon">🔴</div>
+                <h4>Northeast IFI Gap</h4>
+                <p class="insight-stat">IFI = 0.12 vs National 0.47</p>
+                <p class="insight-text">Northeast states have 4× lower identity freshness, putting 50M+ citizens at
+                    authentication risk.</p>
+            </div>
+            <div class="insight-card insight-warning">
+                <div class="insight-icon">🟡</div>
+                <h4>Child Lifecycle Gap</h4>
+                <p class="insight-stat">8 states below CLCR threshold</p>
+                <p class="insight-text">Mandatory biometric updates for children aged 5-17 are being missed
+                    systematically.</p>
+            </div>
+            <div class="insight-card insight-info">
+                <div class="insight-icon">🔵</div>
+                <h4>Weekend Service Reduction</h4>
+                <p class="insight-stat">30% volume drop on weekends</p>
+                <p class="insight-text">Working citizens face systematic exclusion due to reduced weekend service
+                    availability.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recommendations Section -->
+    <section class="recommendations-section">
+        <div class="section-header">
+            <h2>🎯 Actionable Recommendations</h2>
+            <p>Tiered interventions for maximum impact</p>
+        </div>
+        <div class="recommendations-timeline">
+            <div class="rec-tier">
+                <div class="tier-header tier-1">
+                    <span class="tier-badge">Tier 1</span>
+                    <h4>Immediate (0-3 months)</h4>
+                </div>
+                <div class="tier-items">
+                    <div class="rec-item">
+                        <span class="rec-icon">📱</span>
+                        <div class="rec-content">
+                            <strong>SMS Awareness Campaign</strong>
+                            <p>Target 5 states with IFI < 0.15 for update reminders</p>
+                        </div>
+                    </div>
+                    <div class="rec-item">
+                        <span class="rec-icon">🏫</span>
+                        <div class="rec-content">
+                            <strong>School Biometric Drives</strong>
+                            <p>Partner with 8 low-CLCR states for child updates</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="rec-tier">
+                <div class="tier-header tier-2">
+                    <span class="tier-badge">Tier 2</span>
+                    <h4>Short-term (3-6 months)</h4>
+                </div>
+                <div class="tier-items">
+                    <div class="rec-item">
+                        <span class="rec-icon">🚐</span>
+                        <div class="rec-content">
+                            <strong>Mobile Update Vans</strong>
+                            <p>Deploy in high-migration urban districts</p>
+                        </div>
+                    </div>
+                    <div class="rec-item">
+                        <span class="rec-icon">📅</span>
+                        <div class="rec-content">
+                            <strong>Extended Weekend Hours</strong>
+                            <p>Pilot Saturday hours in low-TAES states</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="rec-tier">
+                <div class="tier-header tier-3">
+                    <span class="tier-badge">Tier 3</span>
+                    <h4>Policy Reform (6-12 months)</h4>
+                </div>
+                <div class="tier-items">
+                    <div class="rec-item">
+                        <span class="rec-icon">🔗</span>
+                        <div class="rec-content">
+                            <strong>Service Integration</strong>
+                            <p>Link Aadhaar updates to bank/telecom renewals</p>
+                        </div>
+                    </div>
+                    <div class="rec-item">
+                        <span class="rec-icon">📊</span>
+                        <div class="rec-content">
+                            <strong>Identity Health Dashboard</strong>
+                            <p>Public state rankings for accountability</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-main">
+                <h3>UIDAI Hackathon 2025</h3>
+                <p>Identity Lifecycle Health Analysis</p>
+            </div>
+            <div class="footer-team">
+                <p><strong>Team UIDAI_1545</strong></p>
+                <p>IET Lucknow</p>
+            </div>
+            <div class="footer-meta">
+                <p>From descriptive to predictive</p>
+                <p class="tagline">Specific districts • Specific actions • Specific timeline</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

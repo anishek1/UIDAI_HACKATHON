@@ -459,3 +459,317 @@ def calculate_lifecycle_gap(
     ] = 'Monitoring Needed'
     
     return result.sort_values('lifecycle_gap', ascending=False)
+
+
+# =============================================================================
+# METRIC 6: Risk Prediction Score (RPS) - NEW
+# =============================================================================
+
+def calculate_risk_prediction_score(
+    ifi: float,
+    clcr: float,
+    taes: float,
+    weights: dict = None
+) -> float:
+    """
+    Calculate composite Risk Prediction Score predicting DBT failure probability.
+    
+    RPS = w1*(1-IFI) + w2*(1-CLCR) + w3*(1-TAES)
+    
+    Higher RPS = Higher risk of authentication failures and DBT disruption.
+    
+    Parameters
+    ----------
+    ifi : float
+        Identity Freshness Index (0-1 scale)
+    clcr : float
+        Child Lifecycle Capture Rate (0-1 scale)
+    taes : float
+        Temporal Access Equity Score (0-1 scale)
+    weights : dict, optional
+        Custom weights for each metric. Default: {'ifi': 0.5, 'clcr': 0.3, 'taes': 0.2}
+    
+    Returns
+    -------
+    float : Risk Prediction Score (0-1, higher = more risk)
+    """
+    if weights is None:
+        weights = {'ifi': 0.5, 'clcr': 0.3, 'taes': 0.2}
+    
+    # Normalize inputs to 0-1 range
+    ifi_norm = min(max(ifi, 0), 1)
+    clcr_norm = min(max(clcr, 0), 1)
+    taes_norm = min(max(taes, 0), 1)
+    
+    # Calculate risk (inverse of health)
+    rps = (
+        weights['ifi'] * (1 - ifi_norm) +
+        weights['clcr'] * (1 - clcr_norm) +
+        weights['taes'] * (1 - taes_norm)
+    )
+    
+    return round(rps, 4)
+
+
+def calculate_rps_dataframe(metrics_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate Risk Prediction Score for all states in metrics DataFrame.
+    
+    Parameters
+    ----------
+    metrics_df : DataFrame with 'ifi', 'clcr', 'taes' columns
+    
+    Returns
+    -------
+    DataFrame with 'rps' column added
+    """
+    result = metrics_df.copy()
+    
+    result['rps'] = result.apply(
+        lambda row: calculate_risk_prediction_score(
+            row['ifi'] if row['ifi'] <= 1 else row['ifi'] / 100,  # Handle percentage format
+            row['clcr'],
+            row['taes']
+        ),
+        axis=1
+    )
+    
+    # Categorize risk levels
+    result['rps_level'] = pd.cut(
+        result['rps'],
+        bins=[-np.inf, 0.30, 0.50, 0.70, np.inf],
+        labels=['Low Risk', 'Moderate Risk', 'High Risk', 'Critical Risk']
+    )
+    
+    # Estimate DBT impact (₹ Crores at risk)
+    # Assumption: Total DBT = ₹10 lakh Cr, distributed by population
+    total_dbt = 1000000  # ₹ Crores
+    result['dbt_at_risk_cr'] = (result['rps'] * total_dbt * 0.06).round(0)  # 6% allocation
+    
+    return result.sort_values('rps', ascending=False)
+
+
+# =============================================================================
+# METRIC 7: Equity Gap Score (EGS) - NEW
+# =============================================================================
+
+def calculate_equity_gap(
+    metrics_df: pd.DataFrame,
+    group_col: str = 'region',
+    metric_col: str = 'ifi'
+) -> pd.DataFrame:
+    """
+    Calculate equity gap - disparity between best and worst performers within groups.
+    
+    Measures how unequal service delivery is within regions/states.
+    
+    Parameters
+    ----------
+    metrics_df : DataFrame with metrics and grouping column
+    group_col : Column to group by (e.g., 'region', 'state')
+    metric_col : Metric to analyze (e.g., 'ifi', 'clcr')
+    
+    Returns
+    -------
+    DataFrame with equity gap scores per group
+    """
+    result = metrics_df.groupby(group_col).agg({
+        metric_col: ['min', 'max', 'mean', 'std', 'count']
+    }).reset_index()
+    
+    result.columns = [group_col, 'min_score', 'max_score', 'mean_score', 'std_score', 'count']
+    
+    # Calculate equity gap (range / mean, normalized)
+    result['range'] = result['max_score'] - result['min_score']
+    result['equity_gap'] = result['range'] / result['mean_score'].replace(0, np.nan)
+    result['equity_gap'] = result['equity_gap'].fillna(0)
+    
+    # Calculate coefficient of variation
+    result['cv'] = result['std_score'] / result['mean_score'].replace(0, np.nan)
+    result['cv'] = result['cv'].fillna(0)
+    
+    # Equity status
+    result['equity_status'] = pd.cut(
+        result['equity_gap'],
+        bins=[-np.inf, 0.30, 0.60, 1.00, np.inf],
+        labels=['Equitable', 'Moderate Gap', 'Significant Gap', 'Severe Disparity']
+    )
+    
+    return result.sort_values('equity_gap', ascending=False)
+
+
+def calculate_district_equity_within_state(
+    district_df: pd.DataFrame,
+    metric_col: str = 'ifi'
+) -> pd.DataFrame:
+    """
+    Calculate equity gap at district level within each state.
+    
+    Identifies states with large internal disparities.
+    """
+    return calculate_equity_gap(district_df, 'state', metric_col)
+
+
+# =============================================================================
+# STATISTICAL CONFIDENCE UTILITIES - NEW
+# =============================================================================
+
+def calculate_confidence_interval(
+    data: pd.Series,
+    confidence: float = 0.95
+) -> Tuple[float, float, float]:
+    """
+    Calculate confidence interval for a metric.
+    
+    Parameters
+    ----------
+    data : pd.Series of values
+    confidence : Confidence level (default 0.95 for 95% CI)
+    
+    Returns
+    -------
+    Tuple of (mean, lower_bound, upper_bound)
+    """
+    from scipy import stats
+    
+    n = len(data)
+    mean = data.mean()
+    
+    if n < 2:
+        return (mean, mean, mean)
+    
+    std_err = data.std() / np.sqrt(n)
+    
+    # t-distribution for small samples
+    if n < 30:
+        t_val = stats.t.ppf((1 + confidence) / 2, n - 1)
+    else:
+        t_val = stats.norm.ppf((1 + confidence) / 2)
+    
+    margin = t_val * std_err
+    
+    return (mean, mean - margin, mean + margin)
+
+
+def add_confidence_to_metrics(
+    df: pd.DataFrame,
+    metric_cols: list,
+    group_by: str = 'state'
+) -> pd.DataFrame:
+    """
+    Add confidence intervals to aggregated metrics.
+    
+    Parameters
+    ----------
+    df : Raw data DataFrame
+    metric_cols : List of metric columns to calculate CI for
+    group_by : Grouping column
+    
+    Returns
+    -------
+    DataFrame with _ci_lower and _ci_upper columns for each metric
+    """
+    try:
+        from scipy import stats
+        
+        result_data = []
+        
+        for group_name, group_df in df.groupby(group_by):
+            row = {group_by: group_name}
+            
+            for col in metric_cols:
+                if col in group_df.columns:
+                    mean, lower, upper = calculate_confidence_interval(group_df[col])
+                    row[col] = mean
+                    row[f'{col}_ci_lower'] = lower
+                    row[f'{col}_ci_upper'] = upper
+                    row[f'{col}_sample_size'] = len(group_df)
+            
+            result_data.append(row)
+        
+        return pd.DataFrame(result_data)
+    
+    except ImportError:
+        # Fallback without scipy
+        return df.groupby(group_by)[metric_cols].agg(['mean', 'std', 'count']).reset_index()
+
+
+def flag_low_confidence_estimates(
+    df: pd.DataFrame,
+    sample_col: str,
+    min_sample: int = 30
+) -> pd.DataFrame:
+    """
+    Flag estimates with low sample sizes that may be unreliable.
+    
+    Parameters
+    ----------
+    df : DataFrame with sample size column
+    sample_col : Name of sample size column
+    min_sample : Minimum sample size for reliable estimate
+    
+    Returns
+    -------
+    DataFrame with 'low_confidence' flag column
+    """
+    result = df.copy()
+    result['low_confidence'] = result[sample_col] < min_sample
+    result['confidence_note'] = result['low_confidence'].apply(
+        lambda x: '⚠️ Low sample size' if x else '✓ Reliable'
+    )
+    return result
+
+
+# =============================================================================
+# PRIORITY RANKING - NEW
+# =============================================================================
+
+def calculate_intervention_priority(
+    metrics_df: pd.DataFrame,
+    population_col: str = None
+) -> pd.DataFrame:
+    """
+    Calculate intervention priority score combining risk and impact.
+    
+    Priority = RPS × Log(Population affected)
+    
+    Parameters
+    ----------
+    metrics_df : DataFrame with metrics
+    population_col : Column with population data (optional)
+    
+    Returns
+    -------
+    DataFrame with priority rankings
+    """
+    result = metrics_df.copy()
+    
+    # Calculate RPS if not present
+    if 'rps' not in result.columns:
+        result = calculate_rps_dataframe(result)
+    
+    # Calculate priority
+    if population_col and population_col in result.columns:
+        result['log_population'] = np.log10(result[population_col].replace(0, 1))
+        result['priority_score'] = result['rps'] * result['log_population']
+    else:
+        result['priority_score'] = result['rps']
+    
+    # Normalize to 0-100
+    max_priority = result['priority_score'].max()
+    if max_priority > 0:
+        result['priority_score_normalized'] = (result['priority_score'] / max_priority * 100).round(1)
+    else:
+        result['priority_score_normalized'] = 0
+    
+    # Rank
+    result['priority_rank'] = result['priority_score_normalized'].rank(ascending=False).astype(int)
+    
+    # Intervention tier
+    result['intervention_tier'] = pd.cut(
+        result['priority_rank'],
+        bins=[0, 5, 15, 30, np.inf],
+        labels=['Tier 1: Immediate', 'Tier 2: Short-term', 'Tier 3: Medium-term', 'Tier 4: Monitoring']
+    )
+    
+    return result.sort_values('priority_rank')

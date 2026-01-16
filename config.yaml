@@ -1,11 +1,14 @@
 # UIDAI Hackathon Project Configuration
 # =====================================
 # Central configuration for reproducible analysis
+# Version 3.0.0 - Enhanced with premium settings
 
 project:
   name: "UIDAI Identity Lifecycle Health Analysis"
   team_id: "UIDAI_1545"
-  version: "2.0.0"
+  team_name: "IET Lucknow"
+  version: "3.0.0"
+  tagline: "From descriptive to predictive"
 
 # Data paths
 data:
@@ -17,50 +20,147 @@ data:
     population: "data/external/state_population.csv"
   processed:
     output_dir: "data/processed"
+    metrics_file: "data/processed/state_metrics.csv"
 
 # Analysis parameters
 analysis:
   # IFI thresholds
   ifi_bands:
-    critical: 0.20
-    at_risk: 0.40
-    healthy: 0.60
+    critical: 0.15
+    at_risk: 0.25
+    healthy: 0.40
+    optimal: 0.60
   
   # CLCR parameters
   expected_child_update_rate: 0.20  # 20% annual
+  clcr_threshold: 1.0  # Target level
   
   # TAES thresholds
+  taes_severe: 0.50
   taes_acceptable: 0.70
   taes_equitable: 0.90
   
   # UCR parameters
   min_activity_threshold: 100
+  
+  # RPS (Risk Prediction Score) weights - NEW
+  rps_weights:
+    ifi: 0.50
+    clcr: 0.30
+    taes: 0.20
+  
+  # DBT Impact assumptions
+  dbt:
+    total_annual_cr: 1000000  # ₹10 lakh Cr
+    failure_rate: 0.02        # 2% baseline
+    staleness_attribution: 0.30  # 30% of failures
 
-# Visualization settings
+# Visualization settings - PREMIUM
 visualization:
   output_dir: "visualizations"
   dpi: 300
   format: "png"
   style: "seaborn-v0_8-whitegrid"
   
+  # Premium color palette
   colors:
-    critical: "#dc3545"
-    at_risk: "#ffc107"
-    healthy: "#28a745"
-    optimal: "#007bff"
+    # Risk-based colors
+    critical: "#E53935"
+    critical_light: "#FFCDD2"
+    at_risk: "#FFB300"
+    at_risk_light: "#FFF8E1"
+    healthy: "#43A047"
+    healthy_light: "#C8E6C9"
+    optimal: "#1E88E5"
+    optimal_light: "#BBDEFB"
     
+    # Brand colors
+    primary: "#1565C0"
+    primary_dark: "#0D47A1"
+    secondary: "#7B1FA2"
+    accent: "#00ACC1"
+    
+    # Neutral palette
+    dark: "#212121"
+    medium: "#616161"
+    light: "#FAFAFA"
+    white: "#FFFFFF"
+    border: "#E0E0E0"
+    
+  # Region colors
   regions:
-    north: "#4e79a7"
-    south: "#f28e2b"
-    east: "#e15759"
-    west: "#76b7b2"
-    northeast: "#59a14f"
-    central: "#edc948"
+    north: "#5C6BC0"
+    south: "#26A69A"
+    east: "#EF5350"
+    west: "#AB47BC"
+    northeast: "#FFA726"
+    central: "#78909C"
+  
+  # Chart size presets
+  presets:
+    thumbnail:
+      width: 6
+      height: 4
+      dpi: 150
+    standard:
+      width: 12
+      height: 8
+      dpi: 200
+    hero:
+      width: 16
+      height: 10
+      dpi: 300
+    presentation:
+      width: 14
+      height: 8
+      dpi: 300
+    report:
+      width: 10
+      height: 6
+      dpi: 300
+  
+  # Typography
+  fonts:
+    family: "Inter, Segoe UI, Arial, sans-serif"
+    title_size: 16
+    label_size: 12
+    tick_size: 10
+    annotation_size: 9
+    
+  # Chart styling
+  styling:
+    grid_alpha: 0.3
+    grid_style: "--"
+    bar_edge_color: "white"
+    bar_edge_width: 1.5
+    scatter_edge_color: "white"
+    scatter_edge_width: 1.5
+    line_width: 2.5
+    marker_size: 8
+
+# Dashboard settings - NEW
+dashboard:
+  enabled: true
+  path: "dashboard"
+  auto_refresh: false
+  features:
+    - kpi_cards
+    - interactive_charts
+    - state_comparison
+    - filters
+    - data_export
 
 # Output settings
 output:
   reports_dir: "reports"
   figures_dir: "visualizations"
-
+  dashboard_dir: "dashboard"
+  
 # Reproducibility
 random_seed: 42
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s | %(levelname)s | %(message)s"
+
